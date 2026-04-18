@@ -46,11 +46,11 @@
     animation: shimmer 3s infinite;
   }
 
-  .mac-button {
+  .mac-btn {
     @apply px-4 py-2 rounded-xl font-bold tracking-tight transition-all duration-300 active:scale-95 cursor-pointer disabled:cursor-not-allowed;
   }
 
-  .mac-button-primary {
+  .mac-btn-primary {
     @apply px-4 py-2 rounded-xl font-bold tracking-tight transition-all duration-300 active:scale-95 cursor-pointer disabled:cursor-not-allowed bg-mac-blue shadow-[0_4px_20px_rgba(10,132,255,0.4)] hover:shadow-mac-blue/50 hover:opacity-100;
     background: linear-gradient(135deg, #0A84FF 0%, #0056b3 100%);
   }

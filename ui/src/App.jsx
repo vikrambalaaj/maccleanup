@@ -400,7 +400,7 @@ export default function App() {
                   <button 
                     onClick={() => { setIsGenerating(true); setTimeout(() => { setIsGenerating(false); setShowScript(true); }, 1500); }}
                     disabled={isGenerating || selected.length === 0}
-                    className="w-full py-5 mac-button-primary text-xl uppercase tracking-[0.1em] font-black"
+                    className="w-full py-5 mac-btn-primary text-xl uppercase tracking-[0.1em] font-black"
                   >
                     {isGenerating ? "Analyzing..." : "Forge Shell Script"}
                   </button>
