@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   ShieldCheck, 
   Trash2, 
@@ -20,15 +20,24 @@ import {
   Settings,
   Power,
   RefreshCw,
-  LayoutDashboard
+  LayoutDashboard,
+  Waves
 } from 'lucide-react';
-import { motion, AnimatePresence, useAnimation } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
+
+const CATEGORY_COLORS = {
+  Browsers: 'text-mac-blue',
+  System: 'text-mac-purple',
+  Dev: 'text-mac-safe',
+  Tools: 'text-mac-caution',
+  Apps: 'text-pink-500'
+};
 
 const CLEANUP_MODULES = [
   {
@@ -148,13 +157,70 @@ const CLEANUP_MODULES = [
   }
 ];
 
+const MeshBackground = () => (
+  <div className="mesh-base">
+    <div className="mesh-circle bg-mac-blue w-[600px] h-[600px] -top-64 -left-64 opacity-20" />
+    <div className="mesh-circle bg-mac-purple w-[500px] h-[500px] top-1/2 -right-32 opacity-10" style={{ animationDelay: '-5s' }} />
+    <div className="mesh-circle bg-mac-safe w-[400px] h-[400px] -bottom-32 left-1/2 opacity-10" style={{ animationDelay: '-12s' }} />
+  </div>
+);
+
+const LiquidMeter = ({ percentage }) => {
+  return (
+    <div className="relative w-52 h-52">
+      <svg className="w-full h-full transform -rotate-90 filter drop-shadow-[0_0_12px_rgba(10,132,255,0.4)]">
+        <circle
+          cx="104"
+          cy="104"
+          r="92"
+          stroke="currentColor"
+          strokeWidth="16"
+          fill="transparent"
+          className="text-white/5"
+        />
+        <motion.circle
+          cx="104"
+          cy="104"
+          r="92"
+          stroke="currentColor"
+          strokeWidth="16"
+          strokeLinecap="round"
+          fill="transparent"
+          strokeDasharray="578"
+          initial={{ strokeDashoffset: 578 }}
+          animate={{ strokeDashoffset: 578 - (578 * 0.72) }}
+          transition={{ duration: 2, ease: [0.34, 1.56, 0.64, 1] }}
+          className="text-mac-blue"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <motion.div 
+          className="flex flex-col items-center"
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.5 }}
+        >
+          <div className="text-5xl font-black gradient-text">72%</div>
+          <div className="text-[10px] text-white/30 uppercase font-black tracking-[0.2em] mt-1">Status: High</div>
+        </motion.div>
+      </div>
+      
+      {/* Decorative pulse */}
+      <motion.div 
+        className="absolute inset-0 border-4 border-mac-blue/20 rounded-full"
+        animate={{ scale: [1, 1.05, 1], opacity: [0.2, 0.4, 0.2] }}
+        transition={{ duration: 4, repeat: Infinity }}
+      />
+    </div>
+  );
+};
+
 export default function App() {
   const [selected, setSelected] = useState(CLEANUP_MODULES.map(m => m.id));
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showScript, setShowScript] = useState(false);
   
-  // Advanced Options
   const [forceKill, setForceKill] = useState(false);
   const [reopenApps, setReopenApps] = useState(true);
 
@@ -176,7 +242,7 @@ export default function App() {
     const modules = CLEANUP_MODULES.filter(m => selected.includes(m.id));
     const lines = [
       '#!/bin/bash',
-      '# Mac Cleanup Pro - Optimized Script',
+      '# Mac Cleanup Pro - Ultra-Premium Script',
       '# =================================',
       'set -e',
       '',
@@ -185,7 +251,6 @@ export default function App() {
     ];
 
     if (forceKill) {
-      lines.push('# Force-killing browsers for deep cleanup');
       lines.push('echo "⚠️ Force-killing Chrome and Comet..."');
       lines.push('pkill -af "Google Chrome" || true');
       lines.push('pkill -af "Comet" || true');
@@ -202,355 +267,319 @@ export default function App() {
       lines.push('echo "✅ Cleanup complete! Re-launching tools..."');
       lines.push('open -a "Google Chrome" || true');
       lines.push('open -a "Comet" || true');
-    } else {
-      lines.push('echo "✅ Cleanup complete!"');
     }
     
     return lines.join('\n');
   }, [selected, forceKill, reopenApps]);
 
-  const handleGenerate = () => {
-    setIsGenerating(true);
-    setTimeout(() => {
-      setIsGenerating(false);
-      setShowScript(true);
-    }, 1200);
-  };
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(generatedScript);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   return (
-    <div className="max-w-7xl mx-auto px-6 py-12">
-      {/* Header */}
-      <motion.header 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex justify-between items-end mb-12"
-      >
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-mac-blue rounded-lg shadow-lg">
-              <ShieldCheck className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-4xl font-bold tracking-tight">Mac Cleanup Pro</h1>
-          </div>
-          <p className="text-white/60 text-lg">Precision storage reclamation with macOS-native aesthetics.</p>
-        </div>
-        <div className="flex gap-4">
-          <button className="glass px-4 py-2 flex items-center gap-2 hover:bg-white/10 transition-colors">
-            <Settings className="w-4 h-4 text-white/60" />
-            <span className="text-sm font-medium">Preferences</span>
-          </button>
-        </div>
-      </motion.header>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Column: Stats & Advanced Options */}
-        <div className="lg:col-span-4 space-y-6">
-          <motion.section 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="glass p-8 relative overflow-hidden"
-          >
-            <div className="relative z-10 flex flex-col items-center">
-              <div className="relative w-48 h-48 mb-6">
-                <svg className="w-full h-full transform -rotate-90">
-                  <circle
-                    cx="96"
-                    cy="96"
-                    r="88"
-                    stroke="currentColor"
-                    strokeWidth="12"
-                    fill="transparent"
-                    className="text-white/10"
-                  />
-                  <motion.circle
-                    cx="96"
-                    cy="96"
-                    r="88"
-                    stroke="currentColor"
-                    strokeWidth="12"
-                    fill="transparent"
-                    strokeDasharray="552.92"
-                    initial={{ strokeDashoffset: 552.92 }}
-                    animate={{ strokeDashoffset: 552.92 - (552.92 * 0.72) }}
-                    transition={{ duration: 1.5, ease: "circOut" }}
-                    className="text-mac-blue"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <motion.span 
-                    key={totalFreed}
-                    initial={{ scale: 0.8 }}
-                    animate={{ scale: 1 }}
-                    className="text-4xl font-bold"
-                  >
-                    72%
-                  </motion.span>
-                  <span className="text-xs text-white/40 uppercase tracking-widest">Storage</span>
-                </div>
-              </div>
-              
-              <div className="text-center">
-                <div className="flex items-center gap-2 mb-1">
-                  <LayoutDashboard className="w-4 h-4 text-mac-blue" />
-                  <h3 className="text-xl font-semibold">Health: 68/100</h3>
-                </div>
-                <p className="text-mac-caution text-sm font-medium px-3 py-1 bg-mac-caution/10 rounded-full inline-block">
-                  Optimized maintenance recommended
-                </p>
-              </div>
-            </div>
-            
-            <div className="absolute top-0 right-0 -mr-20 -mt-20 w-40 h-40 bg-mac-blue/20 blur-[100px] rounded-full" />
-          </motion.section>
-
-          {/* New Control Panel */}
-          <motion.section 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="glass p-6"
-          >
-            <h4 className="text-xs font-bold text-white/30 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-              <Zap className="w-3 h-3" /> Script Protocol
-            </h4>
-            
-            <div className="space-y-6">
-              <div className="flex items-center justify-between group">
-                <div className="flex gap-3">
-                  <div className="p-2 bg-mac-danger/10 rounded-lg text-mac-danger">
-                    <Power className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold">Force-Kill Apps</p>
-                    <p className="text-[10px] text-white/40">Aggressively close browsers</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setForceKill(!forceKill)}
-                  className={cn(
-                    "w-10 h-5 rounded-full transition-colors relative",
-                    forceKill ? "bg-mac-blue" : "bg-white/10"
-                  )}
-                >
-                  <motion.div 
-                    animate={{ x: forceKill ? 20 : 2 }}
-                    className="absolute top-1 w-3 h-3 bg-white rounded-full shadow-md"
-                  />
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between group">
-                <div className="flex gap-3">
-                  <div className="p-2 bg-mac-safe/10 rounded-lg text-mac-safe">
-                    <RefreshCw className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold">Auto-Reopen</p>
-                    <p className="text-[10px] text-white/40">Launch tools after cleanup</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setReopenApps(!reopenApps)}
-                  className={cn(
-                    "w-10 h-5 rounded-full transition-colors relative",
-                    reopenApps ? "bg-mac-blue" : "bg-white/10"
-                  )}
-                >
-                  <motion.div 
-                    animate={{ x: reopenApps ? 20 : 2 }}
-                    className="absolute top-1 w-3 h-3 bg-white rounded-full shadow-md"
-                  />
-                </button>
-              </div>
-
-              <div className="pt-4 border-t border-white/5 space-y-4">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-white/60">Estimated Gain</span>
-                  <motion.span 
-                    key={totalFreed}
-                    initial={{ y: 5, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    className="text-xl font-black text-mac-blue"
-                  >
-                    {totalFreed} GB
-                  </motion.span>
-                </div>
-                <button 
-                  onClick={handleGenerate}
-                  disabled={isGenerating || selected.length === 0}
-                  className={cn(
-                    "w-full py-4 rounded-xl font-extrabold text-lg transition-all duration-300",
-                    "bg-gradient-to-br from-mac-blue via-mac-blue to-mac-purple shadow-xl",
-                    "hover:shadow-mac-blue/20 hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:grayscale"
-                  )}
-                >
-                  {isGenerating ? "Compiling..." : "Generate Script"}
-                </button>
-              </div>
-            </div>
-          </motion.section>
-        </div>
-
-        {/* Right Column: Grid and Script Preview */}
-        <div className="lg:col-span-8">
-          <AnimatePresence mode="wait">
-            {showScript ? (
-              <motion.div 
-                key="script"
-                layoutId="content"
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                className="glass overflow-hidden h-full flex flex-col shadow-2xl ring-1 ring-white/10"
-              >
-                <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
-                  <div className="flex gap-2">
-                    <div className="w-3 h-3 rounded-full bg-mac-danger shadow-[0_0_8px_rgba(255,69,58,0.5)]" />
-                    <div className="w-3 h-3 rounded-full bg-mac-caution shadow-[0_0_8px_rgba(255,214,10,0.5)]" />
-                    <div className="w-3 h-3 rounded-full bg-mac-safe shadow-[0_0_8px_rgba(48,209,88,0.5)]" />
-                  </div>
-                  <div className="text-[10px] text-white/30 font-mono tracking-[0.3em] font-black uppercase">Terminal Engine 2.6</div>
-                  <button 
-                    onClick={copyToClipboard}
-                    className="group flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all active:scale-95"
-                  >
-                    {copied ? <Check className="w-3 h-3 text-mac-safe" /> : <Copy className="w-3 h-3 text-white/40" />}
-                    <span className="text-[10px] font-black uppercase tracking-widest">{copied ? "Copied" : "Copy"}</span>
-                  </button>
-                </div>
-                <div className="p-8 bg-[#0a0a0b]/90 font-mono text-sm overflow-auto flex-grow h-[640px] leading-relaxed custom-scrollbar">
-                  <pre className="text-mac-blue/80 whitespace-pre-wrap">
-                    <code>{generatedScript}</code>
-                  </pre>
-                </div>
-                <div className="p-6 border-t border-white/5 flex justify-center bg-white/5">
-                  <button 
-                    onClick={() => setShowScript(false)}
-                    className="text-[10px] text-white/30 hover:text-mac-blue uppercase font-black tracking-[0.4em] transition-all hover:tracking-[0.5em]"
-                  >
-                    ← Modify Payload Selections
-                  </button>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div 
-                key="grid"
-                layout
-                initial="hidden"
-                animate="visible"
-                variants={{
-                  visible: { transition: { staggerChildren: 0.05 } }
-                }}
-                className="grid grid-cols-1 md:grid-cols-2 gap-4"
-              >
-                {CLEANUP_MODULES.map((module) => {
-                  const Icon = module.icon;
-                  const isSelected = selected.includes(module.id);
-                  return (
-                    <motion.div
-                      key={module.id}
-                      layout
-                      variants={{
-                        hidden: { opacity: 0, y: 15 },
-                        visible: { opacity: 1, y: 0 }
-                      }}
-                      whileHover={{ scale: 1.01, transition: { duration: 0.2 } }}
-                      onClick={() => toggleModule(module.id)}
-                      className={cn(
-                        "glass p-6 cursor-pointer transition-all duration-300 relative group border-2",
-                        isSelected 
-                          ? "border-mac-blue/40 bg-mac-blue/5 shadow-[0_0_30px_rgba(0,122,255,0.05)]" 
-                          : "border-transparent hover:border-white/10 hover:bg-white/5"
-                      )}
-                    >
-                      <div className="flex justify-between items-start mb-4">
-                        <div className={cn(
-                          "p-3 rounded-xl shadow-lg transition-all duration-300",
-                          isSelected ? "bg-mac-blue text-white" : "bg-white/5 text-white/40 group-hover:text-mac-blue"
-                        )}>
-                          <Icon className="w-6 h-6" />
-                        </div>
-                        <div className="flex flex-col items-end gap-2">
-                          <span className={cn(
-                            "text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full",
-                            module.risk === 'Safe' ? "bg-mac-safe/10 text-mac-safe" : 
-                            module.risk === 'Caution' ? "bg-mac-caution/10 text-mac-caution" : 
-                            "bg-mac-danger/10 text-mac-danger"
-                          )}>
-                            {module.risk}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div className="relative z-10">
-                        <h4 className="font-extrabold text-lg leading-tight mb-1">{module.name}</h4>
-                        <p className="text-xs text-white/40 mb-4 h-8 overflow-hidden line-clamp-2">{module.description}</p>
-                        <div className="flex items-center gap-3">
-                          <span className={cn(
-                            "font-black text-sm transition-colors",
-                            isSelected ? "text-mac-blue" : "text-white/60"
-                          )}>~{module.size}</span>
-                          <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
-                          <span className="text-[10px] text-white/30 uppercase font-black tracking-widest">{module.category}</span>
-                        </div>
-                      </div>
-
-                      <div className={cn(
-                        "absolute bottom-4 right-4 flex items-center justify-center w-8 h-8 rounded-full transition-all duration-500",
-                        isSelected ? "bg-mac-blue text-white rotate-0 scale-100 shadow-lg shadow-mac-blue/20" : "bg-white/5 text-transparent -rotate-90 scale-0 shadow-none"
-                      )}>
-                        <Check className="w-5 h-5 stroke-[3px]" />
-                      </div>
-                    </motion.div>
-                  )
-                })}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
+    <div className="relative min-h-screen">
+      <MeshBackground />
       
-      <motion.footer 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.8 }}
-        className="mt-16 flex justify-center gap-16 text-white/20 text-[10px] font-black uppercase tracking-[0.4em]"
-      >
-        <div className="flex items-center gap-2 hover:text-white/40 transition-colors cursor-help">
-          <ShieldCheck className="w-3 h-3" />
-          <span>Privacy Assured</span>
-        </div>
-        <div className="flex items-center gap-2 hover:text-white/40 transition-colors cursor-help">
-          <Terminal className="w-3 h-3" />
-          <span>Local Execution</span>
-        </div>
-        <div className="flex items-center gap-2 hover:text-white/40 transition-colors cursor-help">
-          <Info className="w-3 h-3" />
-          <span>Open Source</span>
-        </div>
-      </motion.footer>
+      <div className="max-w-7xl mx-auto px-10 py-16">
+        <motion.header 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex justify-between items-center mb-20"
+        >
+          <div className="group cursor-default">
+            <div className="flex items-center gap-4 mb-3">
+              <motion.div 
+                whileHover={{ rotate: 360 }}
+                transition={{ duration: 0.8 }}
+                className="p-3 bg-gradient-to-br from-mac-blue to-mac-purple rounded-2xl shadow-[0_0_25px_rgba(10,132,255,0.3)]"
+              >
+                <Waves className="w-8 h-8 text-white" />
+              </motion.div>
+              <h1 className="text-5xl font-black tracking-tighter">Mac Cleanup <span className="gradient-text">Pro</span></h1>
+            </div>
+            <p className="text-white/40 text-lg font-medium tracking-tight ml-1">Surgical storage reclamation for power users.</p>
+          </div>
+          <div className="flex gap-4">
+            <button className="glass px-6 py-3 flex items-center gap-3 hover:bg-white/10 group">
+              <Settings className="w-4 h-4 text-white/40 group-hover:text-mac-blue transition-colors" />
+              <span className="text-xs font-black uppercase tracking-[0.2em]">Environment</span>
+            </button>
+          </div>
+        </motion.header>
 
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.2);
-        }
-      `}</style>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          {/* Left: Performance Hub */}
+          <div className="lg:col-span-4 space-y-8">
+            <motion.section 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: "spring", stiffness: 100 }}
+              className="glass p-10 relative overflow-hidden group shadow-[0_30px_60px_rgba(0,0,0,0.4)]"
+            >
+              <div className="relative z-10 flex flex-col items-center">
+                <LiquidMeter />
+                
+                <div className="text-center mt-8">
+                  <div className="flex items-center justify-center gap-3 mb-2">
+                    <LayoutDashboard className="w-5 h-5 text-mac-blue" />
+                    <h3 className="text-2xl font-black uppercase tracking-tight italic text-white/90">System Health</h3>
+                  </div>
+                  <div className="mt-4 px-5 py-2 glass bg-mac-caution/5 border-mac-caution/20">
+                    <span className="text-xs font-black text-mac-caution uppercase tracking-widest">Action Recommended</span>
+                  </div>
+                </div>
+              </div>
+              <div className="absolute top-0 left-0 w-full h-full shimmer-bg opacity-20 pointer-events-none" />
+            </motion.section>
+
+            <motion.section 
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2, type: "spring" }}
+              className="glass p-8 border border-white/5"
+            >
+              <h4 className="text-[10px] font-black text-white/20 uppercase tracking-[0.5em] mb-8">Script Control Protocol</h4>
+              
+              <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-4">
+                    <div className="p-3 bg-mac-danger/5 rounded-xl text-mac-danger group hover:bg-mac-danger/10 transition-colors">
+                      <Power className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-black uppercase tracking-tighter">Force-Kill Apps</p>
+                      <p className="text-[10px] text-white/30 font-bold">Deep Cache Reclamation</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setForceKill(!forceKill)}
+                    className={cn(
+                      "w-12 h-6 rounded-full transition-all duration-500 relative ring-1 ring-white/10",
+                      forceKill ? "bg-mac-blue" : "bg-white/5"
+                    )}
+                  >
+                    <motion.div 
+                      animate={{ x: forceKill ? 26 : 4 }}
+                      className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-xl"
+                    />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-4">
+                    <div className="p-3 bg-mac-safe/5 rounded-xl text-mac-safe group hover:bg-mac-safe/10 transition-colors">
+                      <RefreshCw className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-black uppercase tracking-tighter">Automatic Restore</p>
+                      <p className="text-[10px] text-white/30 font-bold">Relaunch Post-Cleanup</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setReopenApps(!reopenApps)}
+                    className={cn(
+                      "w-12 h-6 rounded-full transition-all duration-500 relative ring-1 ring-white/10",
+                      reopenApps ? "bg-mac-blue" : "bg-white/5"
+                    )}
+                  >
+                    <motion.div 
+                      animate={{ x: reopenApps ? 26 : 4 }}
+                      className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-xl"
+                    />
+                  </button>
+                </div>
+
+                <div className="pt-6 border-t border-white/5">
+                  <div className="flex justify-between items-end mb-6">
+                    <span className="text-[10px] font-black text-white/30 uppercase tracking-widest leading-none mb-1">Total Target Space</span>
+                    <motion.span 
+                      key={totalFreed}
+                      initial={{ scale: 0.8, color: '#BF5AF2' }}
+                      animate={{ scale: 1, color: '#0A84FF' }}
+                      className="text-4xl font-black tracking-tighter"
+                    >
+                      {totalFreed} <span className="text-lg opacity-40 ml-1 italic">GB</span>
+                    </motion.span>
+                  </div>
+                  <button 
+                    onClick={() => { setIsGenerating(true); setTimeout(() => { setIsGenerating(false); setShowScript(true); }, 1500); }}
+                    disabled={isGenerating || selected.length === 0}
+                    className="w-full py-5 mac-button-primary text-xl uppercase tracking-[0.1em] font-black"
+                  >
+                    {isGenerating ? "Analyzing..." : "Forge Shell Script"}
+                  </button>
+                </div>
+              </div>
+            </motion.section>
+          </div>
+
+          {/* Right: Grid & Engine Preview */}
+          <div className="lg:col-span-8">
+            <AnimatePresence mode="wait">
+              {showScript ? (
+                <motion.div 
+                  key="script"
+                  layoutId="content"
+                  initial={{ opacity: 0, y: 40 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 40 }}
+                  className="glass overflow-hidden h-full flex flex-col bg-[#050505]/60 ring-1 ring-white/10"
+                >
+                  <div className="p-5 border-b border-white/10 flex justify-between items-center bg-white/2">
+                    <div className="flex gap-2.5">
+                      <div className="w-3.5 h-3.5 rounded-full bg-mac-danger shadow-[0_0_15px_rgba(255,69,58,0.4)]" />
+                      <div className="w-3.5 h-3.5 rounded-full bg-mac-caution shadow-[0_0_15px_rgba(255,214,10,0.4)]" />
+                      <div className="w-3.5 h-3.5 rounded-full bg-mac-safe shadow-[0_0_15px_rgba(48,209,88,0.4)]" />
+                    </div>
+                    <div className="text-[11px] text-mac-blue font-black tracking-[0.4em] uppercase opacity-70">Script Engine Core v2.7</div>
+                    <button 
+                      onClick={() => { navigator.clipboard.writeText(generatedScript); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                      className="group flex items-center gap-3 px-5 py-2.5 rounded-xl glass bg-mac-blue/10 hover:bg-mac-blue/20 transition-all border-mac-blue/30 active:scale-95"
+                    >
+                      {copied ? <Check className="w-4 h-4 text-mac-safe" /> : <Copy className="w-4 h-4 text-mac-blue" />}
+                      <span className="text-[10px] font-black uppercase tracking-widest">{copied ? "Success" : "Copy Content"}</span>
+                    </button>
+                  </div>
+                  <div className="p-10 bg-black/40 font-mono text-sm overflow-auto flex-grow h-[680px] custom-scrollbar selection:bg-mac-blue/20">
+                    <div className="flex gap-6">
+                      <div className="text-white/10 text-right select-none font-black opacity-30">
+                        {generatedScript.split('\n').map((_, i) => <div key={i}>{i + 1}</div>)}
+                      </div>
+                      <pre className="text-white/80 whitespace-pre-wrap flex-grow">
+                        <code>{generatedScript}</code>
+                      </pre>
+                    </div>
+                  </div>
+                  <div className="p-8 border-t border-white/5 flex bg-white/2 justify-center">
+                    <button 
+                      onClick={() => setShowScript(false)}
+                      className="text-[10px] text-white/20 hover:text-white uppercase font-black tracking-[0.6em] transition-all hover:tracking-[0.8em]"
+                    >
+                      ← Back to Manifest
+                    </button>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div 
+                  key="grid"
+                  initial="hidden"
+                  animate="visible"
+                  variants={{
+                    visible: { transition: { staggerChildren: 0.08 } }
+                  }}
+                  className="grid grid-cols-1 md:grid-cols-2 gap-5"
+                >
+                  {CLEANUP_MODULES.map((module) => {
+                    const Icon = module.icon;
+                    const isSelected = selected.includes(module.id);
+                    const catColor = CATEGORY_COLORS[module.category];
+                    
+                    return (
+                      <motion.div
+                        key={module.id}
+                        variants={{
+                          hidden: { opacity: 0, scale: 0.9, y: 20 },
+                          visible: { opacity: 1, scale: 1, y: 0 }
+                        }}
+                        transition={{ type: "spring", damping: 15 }}
+                        onClick={() => toggleModule(module.id)}
+                        className={cn(
+                          "glass glass-hover p-8 cursor-pointer relative group overflow-hidden",
+                          isSelected ? "border-mac-blue/40 bg-mac-blue/5" : "border-transparent"
+                        )}
+                      >
+                        <div className="flex justify-between items-start mb-6">
+                          <div className={cn(
+                            "p-4 rounded-2xl shadow-2xl transition-all duration-500",
+                            isSelected ? "bg-mac-blue text-white" : cn("bg-white/5", catColor)
+                          )}>
+                            <Icon className="w-7 h-7" />
+                          </div>
+                          <div className="flex flex-col items-end gap-2">
+                            <span className={cn(
+                              "text-[8px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full ring-1 ring-inset",
+                              module.risk === 'Safe' ? "bg-mac-safe/5 text-mac-safe ring-mac-safe/20" : 
+                              module.risk === 'Caution' ? "bg-mac-caution/5 text-mac-caution ring-mac-caution/20" : 
+                              "bg-mac-danger/5 text-mac-danger ring-mac-danger/20"
+                            )}>
+                              {module.risk}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="relative z-10">
+                          <h4 className="font-black text-xl leading-tight mb-2 tracking-tight italic uppercase">{module.name}</h4>
+                          <p className="text-xs text-white/30 font-medium mb-6 leading-relaxed h-8 line-clamp-2">{module.description}</p>
+                          <div className="flex items-center gap-4">
+                            <span className={cn(
+                              "font-black text-sm tracking-widest",
+                              isSelected ? "text-mac-blue" : "text-white/40"
+                            )}>~{module.size}</span>
+                            <div className="w-1.5 h-1.5 rounded-full bg-white/5" />
+                            <span className="text-[9px] text-white/20 uppercase font-bold tracking-[0.2em]">{module.category}</span>
+                          </div>
+                        </div>
+
+                        {/* Animated Border Shimmer on select */}
+                        {isSelected && (
+                          <div className="absolute inset-0 border-2 border-mac-blue/30 rounded-2xl pointer-events-none" />
+                        )}
+
+                        <div className={cn(
+                          "absolute bottom-6 right-6 flex items-center justify-center w-10 h-10 rounded-full transition-all duration-500",
+                          isSelected ? "bg-mac-blue text-white rotate-0 scale-100 shadow-[0_0_20px_rgba(10,132,255,0.4)]" : "bg-white/5 text-transparent -rotate-90 scale-0 shadow-none"
+                        )}>
+                          <Check className="w-6 h-6 stroke-[3px]" />
+                        </div>
+                      </motion.div>
+                    )
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+        
+        <motion.footer 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.2 }}
+          className="mt-24 flex justify-between items-center text-white/10 text-[9px] font-black uppercase tracking-[0.6em] border-t border-white/5 pt-12"
+        >
+          <div className="flex gap-12">
+            <div className="flex items-center gap-2 hover:text-white/30 transition-colors cursor-help group">
+              <ShieldCheck className="w-3 h-3 group-hover:text-mac-safe transition-colors" />
+              <span>Safety Validated</span>
+            </div>
+            <div className="flex items-center gap-2 hover:text-white/30 transition-colors cursor-help group">
+              <Terminal className="w-3 h-3 group-hover:text-mac-blue transition-colors" />
+              <span>POSIX Compliant</span>
+            </div>
+            <div className="flex items-center gap-2 hover:text-white/30 transition-colors cursor-help group">
+              <Info className="w-3 h-3 group-hover:text-mac-purple transition-colors" />
+              <span>v2.7 Stable</span>
+            </div>
+          </div>
+          <div>EST. 2026 - POWERED BY ANTIGRAVITY</div>
+        </motion.footer>
+
+        <style>{`
+          .custom-scrollbar::-webkit-scrollbar {
+            width: 10px;
+          }
+          .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+          }
+          .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            border: 3px solid transparent;
+            background-clip: padding-box;
+          }
+          .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border: 3px solid transparent;
+            background-clip: padding-box;
+          }
+        `}</style>
+      </div>
     </div>
   );
 }
