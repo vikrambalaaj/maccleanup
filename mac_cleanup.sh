@@ -2,7 +2,7 @@
 # =============================================================================
 # mac_cleanup.sh — Safe macOS System Data Cleanup Script
 # Runs as a daily LaunchDaemon service
-# Version: 2.4
+# Version: 2.5
 # =============================================================================
 
 set -euo pipefail
@@ -12,7 +12,7 @@ IS_ROOT=false
 [[ $EUID -eq 0 ]] && IS_ROOT=true
 
 # ── Configuration ─────────────────────────────────────────────────────────────
-SCRIPT_VERSION="2.4"
+SCRIPT_VERSION="2.5"
 
 if [[ "$IS_ROOT" == "true" ]]; then
     LOG_DIR="/var/log/mac_cleanup"
@@ -183,23 +183,28 @@ clean_user_cache_per_user() {
         log "Freed $(human_readable $freed) from general caches for: $username"
     fi
 
-    # Chrome Internal Caches (requested by user)
-    # Handles Default and Profile-based directories
-    local chrome_app_support="${homedir}/Library/Application Support/Google/Chrome"
-    if [[ -d "$chrome_app_support" ]]; then
-        for profile in "$chrome_app_support"/*/ ; do
-            if [[ -d "${profile}Cache" ]]; then safe_delete "${profile}Cache" 0 "--recursive"; fi
-            if [[ -d "${profile}Code Cache" ]]; then safe_delete "${profile}Code Cache" 0 "--recursive"; fi
-            if [[ -d "${profile}GPUCache" ]]; then safe_delete "${profile}GPUCache" 0 "--recursive"; fi
-        done
-    fi
+    # Chrome & Comet Internal Caches (requested by user)
+    local CHROME_LIKE_APPS=("Google/Chrome" "Comet")
+    for app_path in "${CHROME_LIKE_APPS[@]}"; do
+        local app_support="${homedir}/Library/Application Support/${app_path}"
+        if [[ -d "$app_support" ]]; then
+            log "Cleaning $app_path caches for $username"
+            
+            # 1. Global App Support Caches
+            local GLOBAL_CACHES=("ShaderCache" "GraphiteDawnCache" "extensions_crx_cache" "component_crx_cache")
+            for gc in "${GLOBAL_CACHES[@]}"; do
+                safe_delete "${app_support}/${gc}" 0 "--recursive"
+            done
 
-    # Comet Caches (requested by user)
-    if [[ -d "${homedir}/Library/Application Support/Comet" ]]; then
-        # Clearing subdirectories in Comet to regain space while keeping potentially important root files if any
-        # The user's du command implies they are interested in the contents of Comet/*
-        find "${homedir}/Library/Application Support/Comet" -mindepth 1 -maxdepth 2 -type d -exec rm -rf {} \; 2>/dev/null || true
-    fi
+            # 2. Profile-specific Caches (Default, Profile 1, etc.)
+            for profile in "$app_support"/*/ ; do
+                # Ignore directories that are not profiles if any
+                if [[ -d "${profile}Cache" ]]; then safe_delete "${profile}Cache" 0 "--recursive"; fi
+                if [[ -d "${profile}Code Cache" ]]; then safe_delete "${profile}Code Cache" 0 "--recursive"; fi
+                if [[ -d "${profile}GPUCache" ]]; then safe_delete "${profile}GPUCache" 0 "--recursive"; fi
+            done
+        fi
+    done
 
     # WebKit & HTTPStorages (requested by user)
     safe_delete "${homedir}/Library/WebKit" 0 "--recursive"
