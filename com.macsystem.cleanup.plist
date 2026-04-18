@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  com.macsystem.cleanup.plist
+  ─────────────────────────────────────────────────────────────────────────────
+  LaunchDaemon: runs mac_cleanup.sh as root daily at 3:00 AM.
+
+  Installation:
+    sudo cp com.macsystem.cleanup.plist /Library/LaunchDaemons/
+    sudo chown root:wheel /Library/LaunchDaemons/com.macsystem.cleanup.plist
+    sudo chmod 644 /Library/LaunchDaemons/com.macsystem.cleanup.plist
+    sudo launchctl load -w /Library/LaunchDaemons/com.macsystem.cleanup.plist
+
+  Uninstallation:
+    sudo launchctl unload /Library/LaunchDaemons/com.macsystem.cleanup.plist
+    sudo rm /Library/LaunchDaemons/com.macsystem.cleanup.plist
+
+  Manual run:
+    sudo launchctl start com.macsystem.cleanup
+  ─────────────────────────────────────────────────────────────────────────────
+-->
+<plist version="1.0">
+<dict>
+    <!-- Unique identifier for this daemon -->
+    <key>Label</key>
+    <string>com.macsystem.cleanup</string>
+
+    <!-- Script to execute (must be installed at this path) -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/usr/local/bin/mac_cleanup.sh</string>
+    </array>
+
+    <!-- Run daily at 03:00 AM (low-usage window) -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>3</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <!-- Redirect stdout to log file -->
+    <key>StandardOutPath</key>
+    <string>/var/log/mac_cleanup/launchd_stdout.log</string>
+
+    <!-- Redirect stderr to separate error log -->
+    <key>StandardErrorPath</key>
+    <string>/var/log/mac_cleanup/launchd_stderr.log</string>
+
+    <!-- Run as root (required for system-level cleanup) -->
+    <key>UserName</key>
+    <string>root</string>
+
+    <!-- Run in root group -->
+    <key>GroupName</key>
+    <string>wheel</string>
+
+    <!-- Run immediately when the service is loaded (startup/login) -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- Throttle: wait at least 60s before retrying a failed run -->
+    <key>ThrottleInterval</key>
+    <integer>60</integer>
+
+    <!-- Automatically restart if the job crashes -->
+    <key>KeepAlive</key>
+    <false/>
+
+    <!-- Low I/O priority — does not interfere with user activity -->
+    <key>LowPriorityIO</key>
+    <true/>
+
+    <!-- Low CPU priority (nice level) -->
+    <key>Nice</key>
+    <integer>10</integer>
+
+    <!-- Working directory -->
+    <key>WorkingDirectory</key>
+    <string>/tmp</string>
+
+    <!-- Environment variables -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin</string>
+        <key>HOME</key>
+        <string>/var/root</string>
+    </dict>
+
+    <!-- Process type: background (reduces thermal/energy impact) -->
+    <key>ProcessType</key>
+    <string>Background</string>
+
+    <!-- Soft resource limits: 4096 files ceiling -->
+    <key>SoftResourceLimits</key>
+    <dict>
+        <key>NumberOfFiles</key>
+        <integer>4096</integer>
+    </dict>
+</dict>
+</plist>
